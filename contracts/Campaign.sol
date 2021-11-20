@@ -24,6 +24,7 @@ contract Campaign {
     uint256 public miniumContribution;
     mapping(address => bool) public approvers;
     uint256 public numRequest;
+    uint256 public approverCount;
     mapping(uint256 => Request) public requests;
 
     constructor(uint256 minum, address sender) {
@@ -40,6 +41,7 @@ contract Campaign {
         require(msg.value > miniumContribution);
 
         approvers[msg.sender] = true;
+        approverCount++;
     }
 
     function createRequest(
@@ -65,13 +67,13 @@ contract Campaign {
         request.approveVoteCount++;
     }
 
-    function getRequest(uint256 index)
-        internal
-        view
-        returns (Request storage r)
-    {
+    function finalizeRequest(uint256 index) public restricted {
         Request storage request = requests[index];
 
-        return request;
+        require(request.approveVoteCount > (approverCount / 2));
+        require(!request.complete);
+
+        request.recipient.transfer(request.value);
+        request.complete = true;
     }
 }
